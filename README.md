@@ -4,7 +4,7 @@
 
 This repository contains the code and resources for the course project, of the course CS787 : Generative AI, project titled **"Explainable Reinforcement Learning with Adversarial LLM Feedback"**. The project investigates the use of large language models (LLMs) as adversarial agents to improve the explainability and performance of reinforcement learning (RL) systems. It compares the outcomes of using RL alone versus RL assisted with LLM feedback.
 
-We have used LLM using Gemini API, we used Gemini's 2.0-flash model for generating feedback as adversarial and defining the reward while fine tuning RL model.
+We have used LLM using Gemini API, we used Gemini's 2.5-flash model for generating feedback as adversarial and defining the reward while fine tuning RL model.
 
 ## Installation
 
