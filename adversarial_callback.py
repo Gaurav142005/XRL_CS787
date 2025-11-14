@@ -4,13 +4,13 @@ import json
 import time
 import numpy as np
 
-# --- Helper function to describe the environment state (from your file) ---
+# Helper function to describe the environment state in the form of a text 
 def get_textual_state(env):
     unwrapped_env = env.unwrapped
     agent_pos = unwrapped_env.agent_pos
     key_pos = None
     door_pos = None
-    door_obj = None  # <-- We'll store the door object itself here
+    door_obj = None 
 
     # Find key and door positions/objects
     for i in range(unwrapped_env.grid.width):
@@ -21,7 +21,7 @@ def get_textual_state(env):
                     key_pos = (i, j)
                 elif cell.type == 'door':
                     door_pos = (i, j)
-                    door_obj = cell  # <-- Store the door object when we find it
+                    door_obj = cell 
 
     # Build the state description
     state_desc = f"Agent at {agent_pos}. "
@@ -37,7 +37,7 @@ def get_textual_state(env):
     
     return state_desc
 
-# --- NEW: Helper function to calculate heuristics ---
+# Function to calculate heuristics
 def get_state_heuristics(unwrapped_env):
     """Calculates heuristics about the current state."""
     agent_pos = unwrapped_env.agent_pos
@@ -86,10 +86,8 @@ class AdversarialCallback(BaseCallback):
         self.k = k
         self.lambda_penalty = lambda_penalty
         
-        # --- NEW: Cache for LLM responses ---
-        self.critique_cache = {}
-        # --- NEW: Store last state's heuristics ---
-        self.last_heuristics = {"objective": "none", "distance": 0}
+        self.critique_cache = {}    #  Cache for LLM responses 
+        self.last_heuristics = {"objective": "none", "distance": 0}  #  Store last state's heuristics 
         
         try:
             self.gemini_model = genai.GenerativeModel(model_name)
@@ -106,9 +104,8 @@ class AdversarialCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         
-        # --- 1. FREQUENCY CHECK ---
-        # Only run our logic every 'k' steps
-        if self.n_calls % self.k != 0:
+        # 1. FREQUENCY CHECK 
+        if self.n_calls % self.k != 0:  # Only run our logic every 'k' steps
             return True # Do nothing for other steps
 
         if not self.gemini_model:
@@ -116,7 +113,7 @@ class AdversarialCallback(BaseCallback):
                 print("DEBUG: Gemini model not initialized, skipping callback logic.")
             return True
 
-        # --- 2. GET CURRENT STATE & PROGRESS ---
+        # 2. GET CURRENT STATE & PROGRESS 
         current_env = self.training_env.envs[0].unwrapped
         current_heuristics = get_state_heuristics(current_env)
         
@@ -130,8 +127,8 @@ class AdversarialCallback(BaseCallback):
             elif current_heuristics["distance"] > self.last_heuristics["distance"]:
                 progress_str = "moved_further"
 
-        # --- 3. CREATE CACHE KEY ---
-        # Get the action the agent *just* took (from the policy)
+        # 3. CREATE CACHE KEY 
+        # Get the action the agent just took (from the policy)
         action_idx = self.locals["actions"][0]
         
         # This map reflects the agent's 6 possible actions AFTER the 'drop' wrapper
@@ -141,13 +138,13 @@ class AdversarialCallback(BaseCallback):
         cache_key = (objective, progress_str, action_str)
         llm_feedback = None
 
-        # --- 4. CHECK CACHE ---
+        # 4. CHECK CACHE 
         if cache_key in self.critique_cache:
             if self.verbose > 0:
                 print(f"DEBUG [Step {self.n_calls}]: Cache HIT for {cache_key}.")
             llm_feedback = self.critique_cache[cache_key]
         
-        # --- 5. CALL API (if cache miss) ---
+        # 5. CALL API (if cache miss) 
         else:
             if self.verbose > 0:
                 print(f"DEBUG [Step {self.n_calls}]: Cache MISS for {cache_key}. Calling Gemini API...")
@@ -158,7 +155,6 @@ class AdversarialCallback(BaseCallback):
                 response = self.gemini_model.generate_content(prompt)
                 raw_text = response.text
                 
-                # Robust JSON parsing
                 json_start = raw_text.find('{')
                 json_end = raw_text.rfind('}') + 1
                 
@@ -168,7 +164,6 @@ class AdversarialCallback(BaseCallback):
                 json_str = raw_text[json_start:json_end]
                 llm_feedback = json.loads(json_str)
             
-                # --- 2. CRITICAL FIX: Only cache on SUCCESS ---
                 self.critique_cache[cache_key] = llm_feedback
                 if self.verbose > 0:
                     print(f"DEBUG: API Success. Saved critique for {cache_key} to cache.")
@@ -177,17 +172,15 @@ class AdversarialCallback(BaseCallback):
                 if self.verbose > 0:
                     print(f"Error during LLM call for key {cache_key}: {e}")
                 
-                # Do not cache the error. Set penalty to 0 for this step only.
                 llm_feedback = {"critique": f"API Error: {e}", "penalty_score": 0.0}
 
-            # --- 3. ADD THE DELAY ---
-            # Wait 10 seconds *after* any API call (success or fail)
-            # to respect the free tier rate limit.
+            #  3. ADD THE DELAY 
+            # Wait 10 seconds *after* any API call (success or fail) to respect the free tier rate limit.
             if self.verbose > 0:
                 print("DEBUG: Waiting 10s to respect API rate limit...")
             time.sleep(10)
 
-        # --- 6. APPLY PENALTY ---
+        # 6. APPLY PENALTY 
         penalty = float(llm_feedback.get("penalty_score", 0.0))
         
         if penalty > 0:
@@ -197,7 +190,7 @@ class AdversarialCallback(BaseCallback):
             
             buffer = self.model.rollout_buffer
             
-            # This applies the penalty to the *last step* (the one that was just evaluated)
+            # This applies the penalty to the last step 
             last_step_index = (buffer.pos - 1) % buffer.buffer_size
             penalty_to_apply = self.lambda_penalty * penalty
             
@@ -208,7 +201,7 @@ class AdversarialCallback(BaseCallback):
         
         self.logger.record("adversary/cache_size", len(self.critique_cache))
         
-        # --- 7. UPDATE LAST HEURISTICS FOR NEXT CHECK ---
+        # 7. UPDATE LAST HEURISTICS FOR NEXT CHECK 
         self.last_heuristics = current_heuristics
         
         return True
@@ -221,12 +214,12 @@ class AdversarialCallback(BaseCallback):
         You are an AI Coach observing a 'Player' in a MiniGrid environment.
         Your goal is to provide a 'penalty_score' (0.0 to 1.0) for a specific situation.
 
-        --- CURRENT SITUATION ---
+         CURRENT SITUATION 
         -   Agent's Current Objective: '{objective}' (e.g., 'key', 'door', 'none')
         -   Agent's Progress (since last check): '{progress}' (e.g., 'moved_closer', 'moved_further', 'no_change')
         -   Agent's Last Action: '{action}'
 
-        --- SCORING RUBRIC ---
+         SCORING RUBRIC 
         -   **Severe Suboptimality (Score: 0.8 - 1.0):**
             -   Progress is 'moved_further'. (Moving away from the goal).
             -   Action is 'toggle' but Objective is 'key'. (Trying to open door without key).
@@ -240,7 +233,7 @@ class AdversarialCallback(BaseCallback):
             -   Action is 'toggle' and Objective is 'door'.
             -   Any other reasonable, non-penalized action.
 
-        --- TASK ---
+        TASK 
         Based *only* on the situation and rubric, provide a critique and penalty.
         Return your analysis in this *exact* JSON format:
         
@@ -249,7 +242,7 @@ class AdversarialCallback(BaseCallback):
           "penalty_score": 0.0
         }}
 
-        --- EXAMPLE ---
+         EXAMPLE 
         Situation: Objective='key', Progress='moved_further', Action='move_forward'
         {{
           "critique": "Severe: The agent's objective is the 'key', but it 'moved_further' away from it.",
