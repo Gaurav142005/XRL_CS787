@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from adversarial_callback import AdversarialCallback 
 load_dotenv()
 
-# configuring API key for Gemini
+# Configuring API key for Gemini
 try:
     GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"] 
     genai.configure(api_key=GOOGLE_API_KEY)
