@@ -1,0 +1,7 @@
+stable-baselines3[extra]
+gymnasium
+gymnasium-minigrid
+google-generativeai
+python-dotenv
+pandas
+minigrid
