@@ -61,8 +61,8 @@ def make_env(render_mode=None, env_grid="MiniGrid-DoorKey-6x6-v0"):
 N_EPISODES = 200
 
 models_to_evaluate = {
-    "Adversarial (From Scratch)": "./results/6x6-Grid/ppo_from_scratch_6x6.zip",
-    "Adversarial (Fine-Tuned)": "./results/6x6-Grid/ppo_adversarial_finetuned_6x6.zip"
+    "Adversarial (From Scratch)": "results/6x6-Grid/ppo_from_scratch_6x6.zip",
+    "Adversarial (Fine-Tuned)": "results/6x6-Grid/ppo_adversarial_finetuned_6x6.zip"
 }
 
 results = {

@@ -8,33 +8,25 @@ import time
 import warnings
 import os
 
-# --- 1. SET UP THE ENVIRONMENT AND WRAPPERS ---
 # (This must be identical to your training.py setup)
 
 class RemoveDropActionWrapper(gym.Wrapper):
     """
     Removes the 'drop' action from the action space.
-    Remaps actions so the agent cannot select 'drop'.
     """
     def __init__(self, env):
         super().__init__(env)
-        # In MiniGrid, action 4 is 'drop'
+        # action 4 is 'drop'
         self.drop_action = 4
-        
-        # New action space is 6: 0:left, 1:right, 2:fwd, 3:pickup, 4:toggle, 5:done
         n_actions = self.action_space.n - 1
         self.action_space = spaces.Discrete(n_actions)
 
     def step(self, action):
-        # Remap actions from agent (0-5) to environment (0-6, skipping 4)
         if action >= self.drop_action:
-            action += 1 # 4 -> 5 (toggle), 5 -> 6 (done)
+            action += 1
         return self.env.step(action)
 
 class DoorKeyRewardWrapper(gym.Wrapper):
-    """
-    Identical reward wrapper from training.
-    """
     def __init__(self, env):
         super().__init__(env)
         self.last_pos = None
@@ -50,14 +42,14 @@ class DoorKeyRewardWrapper(gym.Wrapper):
         obs, reward, terminated, truncated, info = self.env.step(action)
         base_env = self.env.unwrapped
         
-        reward -= 0.01 # Small penalty for existing
+        reward -= 0.01
         
         if tuple(base_env.agent_pos) == self.last_pos:
-            reward -= 0.02 # Penalty for staying in the same spot
+            reward -= 0.02
         
-        PICKUP_ACTION = 3 # This is the agent's action
+        PICKUP_ACTION = 3
         if action == PICKUP_ACTION and not info.get("picked_up", False):
-            reward -= 0.25 # Penalize attempting to pick up nothing
+            reward -= 0.25
 
         self.last_action = action
         
@@ -70,9 +62,6 @@ class DoorKeyRewardWrapper(gym.Wrapper):
         return obs, reward, terminated, truncated, info
 
 def make_env(render_mode=None, env_grid="MiniGrid-DoorKey-6x6-v0"):
-    """
-    Utility function for creating the wrapped environment.
-    """
     env = gym.make(env_grid, render_mode=render_mode)
     env = RemoveDropActionWrapper(env)
     env = DoorKeyRewardWrapper(env)
@@ -80,14 +69,12 @@ def make_env(render_mode=None, env_grid="MiniGrid-DoorKey-6x6-v0"):
     env = FlatObsWrapper(env)
     return env
 
-# --- 2. EVALUATION SETUP ---
-N_EPISODES = 500 # 500-1000 is a good range
+N_EPISODES = 500
 ENV_ID = "MiniGrid-DoorKey-6x6-v0"
 
-# List of models you want to compare
 models_to_evaluate = {
-    "Base Model (Scratch)": "./results/ppo_adversarial_from_scratch.zip",
-    "LLM Fine-Tuned Model": "./results/ppo_adversarial_finetuned.zip"
+    "Base Model (Scratch)": "results/ppo_adversarial_from_scratch_6x6.zip",
+    "LLM Fine-Tuned Model": "results/ppo_adversarial_finetuned_6x6.zip"
 }
 
 results = {}
@@ -99,12 +86,11 @@ def env_fn():
 
 eval_env = DummyVecEnv([env_fn])
 
-print(f"--- 🚀 Starting Evaluation ---")
+print(f"Starting Evaluation")
 print(f"Environment: {ENV_ID}")
 print(f"Models: {', '.join(models_to_evaluate.keys())}")
 print(f"Episodes per model: {N_EPISODES}\n")
 
-# --- 3. RUN EVALUATION LOOP ---
 start_time = time.time()
 
 for model_name, model_path in models_to_evaluate.items():
@@ -117,18 +103,15 @@ for model_name, model_path in models_to_evaluate.items():
         
     try:
         model = PPO.load(model_path)
-        
-        # Suppress warnings from the evaluation function if any
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             
-            # This function runs the model for N episodes and returns the stats
             mean_reward, std_reward = evaluate_policy(
                 model, 
                 eval_env, 
                 n_eval_episodes=N_EPISODES,
-                deterministic=True,      # Use deterministic actions for a fair test
-                render=False             # No rendering during eval
+                deterministic=True,     
+                render=False             
             )
             
         results[model_name] = (mean_reward, std_reward)
@@ -141,8 +124,7 @@ for model_name, model_path in models_to_evaluate.items():
 end_time = time.time()
 print(f"\nEvaluation finished in {end_time - start_time:.2f} seconds.")
 
-# --- 4. PRINT FINAL RESULTS ---
-print("\n--- 🏁 Final Comparison ---")
+print("\nFinal Comparison")
 print(f"Average reward over {N_EPISODES} deterministic episodes (Mean +/- Std):")
 print("-" * 40)
 for name, (mean, std) in results.items():
