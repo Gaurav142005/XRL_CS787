@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import time
 import pandas as pd
 
-# --- 1. ENVIRONMENT SETUP (Must match training) ---
 
 class RemoveDropActionWrapper(gym.Wrapper):
     def __init__(self, env):
@@ -50,7 +49,7 @@ class DoorKeyRewardWrapper(gym.Wrapper):
         self.last_pos = tuple(base_env.agent_pos)
         return obs, reward, terminated, truncated, info
 
-def make_env(render_mode=None, env_grid="MiniGrid-DoorKey-8x8-v0"):
+def make_env(render_mode=None, env_grid="MiniGrid-DoorKey-6x6-v0"):
     env = gym.make(env_grid, render_mode=render_mode)    
     env = RemoveDropActionWrapper(env)
     env = DoorKeyRewardWrapper(env)
@@ -58,13 +57,12 @@ def make_env(render_mode=None, env_grid="MiniGrid-DoorKey-8x8-v0"):
     env = FlatObsWrapper(env)
     return env
 
-# --- 2. EVALUATION CONFIGURATION ---
 
 N_EPISODES = 200
 
 models_to_evaluate = {
-    "Adversarial (From Scratch)": "ppo_from_scratch_8x8.zip",
-    "Adversarial (Fine-Tuned)": "ppo_adversarial_finetuned_8x8.zip"
+    "Adversarial (From Scratch)": "./results/6x6-Grid/ppo_from_scratch_6x6.zip",
+    "Adversarial (Fine-Tuned)": "./results/6x6-Grid/ppo_adversarial_finetuned_6x6.zip"
 }
 
 results = {
@@ -74,10 +72,9 @@ results = {
     "success_rate": {}
 }
 
-# --- 3. DATA COLLECTION LOOP ---
 
 for model_name, model_path in models_to_evaluate.items():
-    print(f"Evaluating {model_name}...")
+    print(f"Evaluating {model_name}")
     
     try:
         model = PPO.load(model_path)
@@ -125,16 +122,13 @@ for model_name, model_path in models_to_evaluate.items():
     results["times"][model_name] = ep_times
     results["success_rate"][model_name] = (success_count / N_EPISODES) * 100
 
-# --- 4. SEPARATE PLOTTING ---
 
-colors = ['#1f77b4', '#ff7f0e'] # Consistent colors for the two models
+colors = ['#1f77b4', '#ff7f0e'] 
 
-# === PLOT 1: Reward vs Episode ===
+# Plot 1 : Reward vs Episode
 plt.figure(figsize=(8, 5))
 for i, (name, rewards) in enumerate(results["rewards"].items()):
-    # Plot raw data faintly
     plt.plot(rewards, alpha=0.2, color=colors[i])
-    # Plot Moving Average
     series = pd.Series(rewards)
     rolling_mean = series.rolling(window=10).mean()
     plt.plot(rolling_mean, label=f"{name} (Mov Avg)", color=colors[i], linewidth=2)
@@ -148,7 +142,7 @@ plt.tight_layout()
 plt.savefig("plot_1_rewards.png")
 plt.show()
 
-# === PLOT 2: Wall-Clock Time vs Episode ===
+# Plot 2 : Wall-Clock Time vs Episode
 plt.figure(figsize=(8, 5))
 for i, (name, times) in enumerate(results["times"].items()):
     plt.plot(times, label=name, alpha=0.8, color=colors[i])
@@ -162,13 +156,12 @@ plt.tight_layout()
 plt.savefig("plot_2_times.png")
 plt.show()
 
-# === PLOT 3: Mean Steps to Completion (Bar Chart) ===
+# Plot 3 : Mean Steps to Completion
 plt.figure(figsize=(7, 5))
 model_names = list(models_to_evaluate.keys())
 steps_means = [np.mean(results["steps"][name]) for name in model_names]
 steps_stds = [np.std(results["steps"][name]) for name in model_names]
 
-# Plot bars with error bars (standard deviation)
 bars = plt.bar(model_names, steps_means, yerr=steps_stds, capsize=10, 
                color=['skyblue', 'salmon'], alpha=0.9)
 
@@ -176,7 +169,6 @@ plt.title("Mean Steps to Completion (Lower is Better)")
 plt.ylabel("Steps")
 plt.grid(True, axis='y', alpha=0.3)
 
-# Add value labels on top of bars
 for bar in bars:
     height = bar.get_height()
     plt.text(bar.get_x() + bar.get_width()/2., height + 1,
@@ -186,7 +178,7 @@ plt.tight_layout()
 plt.savefig("plot_3_steps_bar.png")
 plt.show()
 
-# === PLOT 4: Success Rate (Bar Chart) ===
+# Plot 4 : Success Rate
 plt.figure(figsize=(7, 5))
 success_rates = [results["success_rate"][name] for name in model_names]
 
@@ -194,7 +186,7 @@ bars_success = plt.bar(model_names, success_rates, color=['skyblue', 'salmon'], 
 
 plt.title("Success Rate (Goal Reached)")
 plt.ylabel("Success %")
-plt.ylim(0, 110) # Give some headroom for the text
+plt.ylim(0, 110)
 plt.grid(True, axis='y', alpha=0.3)
 
 for bar in bars_success:
