@@ -37,19 +37,19 @@ We have used LLM using Gemini API, we used Gemini's 2.5-flash model for generati
 
 ## Usage
 
-### Visualing Our Results
+### Visualising Our Results
 
-Although we have uploaded our results in the results folder, if you want to visualise the models, then just run:
+Although we have uploaded our results in the results folder, if you want to visualise the model for 6x6 grid, then just run: 
 
 ```bash
 python ./codes/visualise.py
 ```
 
-This is for 6x6 grid.
+Note: Initialise the API key to any dummy string for this.
 
 ### Training on device
 
-If you want to train on your device you have to just run:
+If you want to train on your device you have to run:
 
 ```bash
 python ./codes/training.py

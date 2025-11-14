@@ -8,8 +8,6 @@ import time
 import warnings
 import os
 
-# (This must be identical to your training.py setup)
-
 class RemoveDropActionWrapper(gym.Wrapper):
     """
     Removes the 'drop' action from the action space.
@@ -80,7 +78,6 @@ models_to_evaluate = {
 results = {}
 
 # Create a vectorized environment for evaluation
-# We wrap it in a function for DummyVecEnv
 def env_fn():
     return make_env(env_grid=ENV_ID)
 
